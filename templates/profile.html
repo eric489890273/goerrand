@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>個人資訊</h2>
+<p><strong>使用者名稱:</strong> {{ current_user.username }}</p>
+<p><strong>角色:</strong> {{ current_user.role }}</p>
+<p><strong>提交的案件數:</strong> {{ current_user.cases|length }}</p>
+{% endblock %}

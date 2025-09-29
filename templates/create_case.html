@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">建立案件</h2>
+<form id="createCaseForm">
+  <div class="mb-3">
+    <label for="document_name" class="form-label">文件名稱（可空）</label>
+    <input type="text" class="form-control" id="document_name">
+  </div>
+  <div class="mb-3">
+    <label for="delivery_target" class="form-label">送達地點/交付對象（必填）</label>
+    <input type="text" class="form-control" id="delivery_target" required>
+  </div>
+  <div class="mb-3">
+    <label for="given_location" class="form-label">給予地點（必填）</label>
+    <input type="text" class="form-control" id="given_location" required>
+  </div>
+  <div class="mb-3">
+    <label for="given_to_staff_time" class="form-label">給予文件時間（必填）</label>
+    <input type="datetime-local" class="form-control" id="given_to_staff_time" required>
+  </div>
+  <button type="submit" class="btn btn-primary">提交案件</button>
+</form>
+
+<script>
+document.getElementById("createCaseForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const res = await fetch("/create_case", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      document_name: document.getElementById("document_name").value,
+      delivery_target: document.getElementById("delivery_target").value,
+      given_location: document.getElementById("given_location").value,
+      given_to_staff_time: document.getElementById("given_to_staff_time").value
+    })
+  });
+  const data = await res.json();
+  if(res.ok){
+    alert(data.message);
+    window.location.href = "/my_cases_page";
+  } else {
+    alert(data.error);
+  }
+});
+</script>
+{% endblock %}

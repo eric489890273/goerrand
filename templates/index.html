@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container my-5">
+    <h2 class="text-center mb-4">案件處理系統功能總覽</h2>
+    <div class="row g-4">
+
+        <!-- 建立案件（客戶/員工都可） -->
+        {% if current_user.role == 'client' or current_user.role == 'staff' %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card p-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">建立案件</h5>
+                    <p class="card-text">客戶可以新增文件委託，填寫交付地點與時間。</p>
+                    <a href="/create_case_page" class="btn btn-primary">前往建立</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 查看自己的案件（客戶/員工都可） -->
+        {% if current_user.role == 'client' or current_user.role == 'staff' %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card p-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">查看案件進度</h5>
+                    <p class="card-text">客戶可以查看自己提交的案件狀態及歷程。</p>
+                    <a href="/my_cases_page" class="btn btn-primary">前往查看</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 個人資訊（客戶/員工都可） -->
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card p-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">個人資訊</h5>
+                    <p class="card-text">查看帳號資訊與提交的案件數量。</p>
+                    <a href="/profile_page" class="btn btn-primary">前往查看</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 員工專用功能 -->
+        {% if current_user.role == 'staff' %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card p-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">查看所有案件</h5>
+                    <p class="card-text">員工可以查看系統所有案件，管理進度。</p>
+                    <a href="/all_cases_page" class="btn btn-primary">前往查看</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card p-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">接取案件</h5>
+                    <p class="card-text">員工可接收待處理的案件，開始負責送件流程。</p>
+                    <a href="/take_case_page" class="btn btn-primary">前往接取</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

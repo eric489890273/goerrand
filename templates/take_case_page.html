@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4 text-center">接取案件</h2>
+<div class="row g-4">
+    <!-- 待接案件 -->
+    <div class="col-12 col-md-6">
+        <h4>待接案件</h4>
+        <div id="pendingContainer" class="row g-3"></div>
+    </div>
+
+    <!-- 已接案件 -->
+    <div class="col-12 col-md-6">
+        <h4>已接案件</h4>
+        <div id="takenContainer" class="row g-3"></div>
+    </div>
+</div>
+
+<!-- 更新進度 Modal -->
+<div class="modal fade" id="updateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">更新案件進度</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="updateForm">
+          <input type="hidden" id="updateCaseId">
+          <div class="mb-3">
+            <label for="statusSelect" class="form-label">狀態</label>
+            <select id="statusSelect" class="form-select">
+              <option value="in_progress">進行中</option>
+              <option value="delivered">已送達</option>
+              <option value="done">完成</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="noteInput" class="form-label">備註</label>
+            <textarea id="noteInput" class="form-control"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="locationInput" class="form-label">處理地點</label>
+            <input type="text" id="locationInput" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary">送出</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { fetchCases, createCaseCard, setupUpdateModal, takeCase } from "/static/js/case_manager.js";
+
+document.addEventListener("DOMContentLoaded", async () => {
+    // ✅ 使用正確的 HTML 容器 ID
+    const pendingContainer = document.getElementById("pendingContainer");
+    const takenContainer = document.getElementById("takenContainer");
+
+    // 初始化 Modal
+    const openUpdateModal = setupUpdateModal("updateModal", "updateForm");
+
+    try {
+        // 取得待接案件
+        const pendingCases = await fetchCases("/pending_cases");
+        pendingCases.forEach(c => createCaseCard(c, "pending", pendingContainer, openUpdateModal));
+
+        // 取得已接案件
+        const takenCases = await fetchCases("/my_taken_cases");
+        takenCases.forEach(c => createCaseCard(c, "taken", takenContainer, openUpdateModal));
+
+    } catch (err) {
+        console.error(err);
+        alert("案件載入失敗：" + err.message);
+    }
+});
+</script>
+
+{% endblock %}

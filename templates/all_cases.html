@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">所有案件</h2>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>文件名稱</th>
+      <th>送達地點</th>
+      <th>給予地點</th>
+      <th>給予時間</th>
+      <th>狀態</th>
+      <th>進度紀錄</th>
+    </tr>
+  </thead>
+  <tbody id="casesBody"></tbody>
+</table>
+
+<script type="module">
+import { fetchCases, populateTable } from "/static/js/case_manager.js";
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const allCases = await fetchCases("/all_cases");
+    populateTable("casesBody", allCases);
+});
+</script>
+
+{% endblock %}

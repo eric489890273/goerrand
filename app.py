@@ -97,7 +97,8 @@ def get_cases():
             "given_location": c.given_location,
             "given_to_staff_time": c.given_to_staff_time.strftime("%Y-%m-%d %H:%M:%S"),
             "status": STATUS_MAP.get(c.status, c.status),
-            "note": c.note or ""   # ✅ 把 note 加回來
+            "note": c.note or "",   # ✅ 把 note 加回來
+            "user_id": c.user_id
         }
         for c in cases
     ])
@@ -159,39 +160,53 @@ def pending_cases():
     ]
     return jsonify(result)
 
-# 員工更新自己已接案件進度
+# 員工或擁有者更新案件進度/內容
 @app.route("/update_taken_case/<int:case_id>", methods=["POST"])
 @login_required
 def update_taken_case(case_id):
-    if current_user.role != "staff":
-        return jsonify({"error": "Access denied"}), 403
-
     data = request.json
     case = Case.query.get(case_id)
     if not case:
         return jsonify({"error": "Case not found"}), 404
 
-    # ❌ 如果案件已完成，不允許修改
-    if case.status == "done":
-        return jsonify({"error": "此案件已完成，不可再修改"}), 400
+    if current_user.role == "staff":
+        if case.status == "done":
+            return jsonify({"error": "此案件已完成，不可再修改"}), 400
 
-    # 更新案件主表狀態
-    new_status = data.get("status")
-    if new_status:
-        case.status = new_status
+        new_status = data.get("status")
+        if new_status:
+            case.status = new_status
 
-    # 新增歷程紀錄
-    case_update = CaseUpdate(
-        case_id=case.id,
-        status=new_status or case.status,
-        note=data.get("note"),
-        location=data.get("location"),
-        update_time=datetime.utcnow()
-    )
-    db.session.add(case_update)
+        case_update = CaseUpdate(
+            case_id=case.id,
+            status=new_status or case.status,
+            note=data.get("note"),
+            location=data.get("location"),
+            update_time=datetime.utcnow()
+        )
+        db.session.add(case_update)
+
+    # 共用更新欄位
+    note = data.get("note")
+    location = data.get("location")
+    delivery_target = data.get("delivery_target")
+    given_time = data.get("given_to_staff_time")
+
+    if note is not None:
+        case.note = note
+    if location is not None:
+        case.given_location = location
+    if delivery_target is not None:
+        case.delivery_target = delivery_target
+    if given_time is not None:
+        try:
+            case.given_to_staff_time = datetime.fromisoformat(given_time)
+        except ValueError:
+            return jsonify({"error": "Invalid datetime format"}), 400
+
     db.session.commit()
+    return jsonify({"message": "Case updated"})
 
-    return jsonify({"message": "Case progress updated"})
 
 # 檢查使用者名稱是否存在
 @app.route("/check_username/<username>")
@@ -229,6 +244,29 @@ def my_taken_cases():
             "updates": updates
         })
     return jsonify(result)
+
+@app.route("/case_history/<int:case_id>")
+@login_required
+def case_history(case_id):
+    case = Case.query.get(case_id)
+    if not case:
+        return jsonify({"error": "Case not found"}), 404
+
+    # 僅案件擁有者或員工可以看
+    if current_user.role != "staff" and case.user_id != current_user.id:
+        return jsonify({"error": "Access denied"}), 403
+
+    updates = [
+        {
+            "status": STATUS_MAP.get(u.status, u.status),
+            "note": u.note,
+            "location": u.location,
+            "time": u.update_time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for u in CaseUpdate.query.filter_by(case_id=case_id).order_by(CaseUpdate.update_time)
+    ]
+
+    return jsonify({"updates": updates})
 
 ## 路徑
 # 根目錄

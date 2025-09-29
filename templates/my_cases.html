@@ -3,15 +3,98 @@
 <h2 class="mb-4">我的案件</h2>
 <div class="row" id="casesContainer"></div>
 
-<script>
-async function loadCases(){
+<!-- 編輯案件 Modal -->
+<div class="modal fade" id="updateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">編輯案件內容</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="updateForm">
+          <input type="hidden" id="updateCaseId">
+
+          <!-- 送達對象 -->
+          <div class="mb-3">
+            <label for="targetInput" class="form-label">送達對象</label>
+            <input type="text" id="targetInput" class="form-control">
+          </div>
+
+          <!-- 給予地點 -->
+          <div class="mb-3">
+            <label for="locationInput" class="form-label">給予地點</label>
+            <input type="text" id="locationInput" class="form-control">
+          </div>
+
+          <!-- 給予時間 -->
+          <div class="mb-3">
+            <label for="timeInput" class="form-label">給予時間</label>
+            <input type="datetime-local" id="timeInput" class="form-control">
+          </div>
+
+          <!-- 備註 -->
+          <div class="mb-3">
+            <label for="noteInput" class="form-label">備註</label>
+            <textarea id="noteInput" class="form-control"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">送出</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- 案件歷程 Modal -->
+<div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">案件進度紀錄</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <ul id="historyList" class="list-group"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type=text/javascript>
+// 把目前使用者 ID 傳進來
+const CURRENT_USER_ID = {{ current_user.id | default(0) | tojson }};
+
+async function loadCases() {
   const res = await fetch("/cases");
   const data = await res.json();
   const container = document.getElementById("casesContainer");
   container.innerHTML = "";
+
   data.forEach(c => {
     const div = document.createElement("div");
     div.className = "col-12 col-md-6 col-lg-4 mb-3";
+
+    // 按鈕 HTML
+    let buttons = `<button class="btn btn-info btn-sm me-2" onclick="showHistory(${c.id})">進度更新紀錄</button>`;
+
+    // 案件尚未完成即可編輯
+    if (c.status !== "已完成") {
+    buttons += `
+        <button class="btn btn-warning btn-sm"
+        data-id="${c.id}"
+        data-note="${c.note}"
+        data-location="${c.given_location}"
+        data-target="${c.delivery_target}"
+        data-time="${c.given_to_staff_time}"
+        onclick="openEditModalFromBtn(this)">
+        編輯內容
+        </button>
+    `;
+    }
+
+
     div.innerHTML = `
       <div class="card p-3">
         <div class="card-body">
@@ -23,12 +106,92 @@ async function loadCases(){
             <strong>狀態：</strong>${c.status}<br>
             <strong>備註：</strong>${c.note || "無"}
           </p>
+          ${buttons}
         </div>
       </div>
     `;
     container.appendChild(div);
   });
 }
-loadCases();
+
+async function showHistory(caseId) {
+  const res = await fetch(`/case_history/${caseId}`);
+  const data = await res.json();
+
+  if (data.error) {
+    alert(data.error);
+    return;
+  }
+
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+
+  data.updates.forEach(u => {
+    const li = document.createElement("li");
+    li.className = "list-group-item";
+    li.innerHTML = `
+      <strong>時間：</strong>${u.time}<br>
+      <strong>狀態：</strong>${u.status}<br>
+      <strong>備註：</strong>${u.note || "無"}<br>
+      <strong>地點：</strong>${u.location || "無"}
+    `;
+    list.appendChild(li);
+  });
+
+  const historyModal = new bootstrap.Modal(document.getElementById("historyModal"));
+  historyModal.show();
+}
+
+// 使用 data- 屬性開啟編輯 Modal
+function openEditModalFromBtn(btn) {
+  const id = btn.dataset.id;
+  const note = btn.dataset.note;
+  const location = btn.dataset.location;
+  const target = btn.dataset.target;
+  const time = btn.dataset.time;
+
+  openEditModal(id, note, location, target, time);
+}
+
+// 打開編輯 Modal
+function openEditModal(caseId, note, location, target, time) {
+  document.getElementById("updateCaseId").value = caseId;
+  document.getElementById("targetInput").value = target || "";
+  document.getElementById("locationInput").value = location || "";
+  document.getElementById("timeInput").value = time ? time.replace(" ", "T") : "";
+  document.getElementById("noteInput").value = note || "";
+
+  const updateModal = new bootstrap.Modal(document.getElementById("updateModal"));
+  updateModal.show();
+}
+
+// 更新表單提交
+document.getElementById("updateForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const caseId = document.getElementById("updateCaseId").value;
+  const note = document.getElementById("noteInput").value;
+  const location = document.getElementById("locationInput").value;
+  const delivery_target = document.getElementById("targetInput").value;
+  const given_to_staff_time = document.getElementById("timeInput").value;
+
+  const res = await fetch(`/update_taken_case/${caseId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ note, location, delivery_target, given_to_staff_time })
+  });
+
+  const data = await res.json();
+  if (data.message) {
+    alert("更新成功");
+    loadCases();
+    const updateModal = bootstrap.Modal.getInstance(document.getElementById("updateModal"));
+    updateModal.hide();
+  } else {
+    alert("更新失敗：" + (data.error || ""));
+  }
+});
+
+// 頁面載入時執行
+document.addEventListener("DOMContentLoaded", loadCases);
 </script>
 {% endblock %}

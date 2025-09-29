@@ -179,7 +179,7 @@ export function populateTable(tableBodyId, cases) {
     const tbody = document.getElementById(tableBodyId);
     tbody.innerHTML = "";
     cases.forEach(c => {
-        const updates = (c.updates || []).map(u =>`${u.time}: ${STATUS_MAP[u.status] || u.status} (${u.note || ''}) at ${u.location || ''}`)
+        const updates = (c.updates || []).map(u =>`${u.time} ${STATUS_MAP[u.status] || u.status} (${u.note || ''})`)
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${c.id}</td>

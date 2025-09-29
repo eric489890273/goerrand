@@ -79,10 +79,10 @@ async function loadCases() {
     // 按鈕 HTML
     let buttons = `<button class="btn btn-info btn-sm me-2" onclick="showHistory(${c.id})">進度更新紀錄</button>`;
 
-    // 案件尚未完成即可編輯
-    if (c.status !== "已完成") {
-    buttons += `
-        <button class="btn btn-warning btn-sm"
+// 案件尚未完成即可編輯/撤銷
+if (c.status !== "已完成" && c.status !== "已撤銷") {
+  buttons += `
+      <button class="btn btn-warning btn-sm me-2"
         data-id="${c.id}"
         data-note="${c.note}"
         data-location="${c.given_location}"
@@ -90,10 +90,10 @@ async function loadCases() {
         data-time="${c.given_to_staff_time}"
         onclick="openEditModalFromBtn(this)">
         編輯內容
-        </button>
-    `;
-    }
-
+      </button>
+      <button class="btn btn-danger btn-sm" onclick="cancelCase(${c.id})">撤銷案件</button>
+  `;
+}
 
     div.innerHTML = `
       <div class="card p-3">
@@ -114,6 +114,7 @@ async function loadCases() {
   });
 }
 
+// 查看案件更新紀錄
 async function showHistory(caseId) {
   const res = await fetch(`/case_history/${caseId}`);
   const data = await res.json();
@@ -140,6 +141,23 @@ async function showHistory(caseId) {
 
   const historyModal = new bootstrap.Modal(document.getElementById("historyModal"));
   historyModal.show();
+}
+
+// 撤銷案件
+async function cancelCase(caseId) {
+  if (!confirm("確定要撤銷這個案件嗎？")) return;
+
+  const res = await fetch(`/cancel_case/${caseId}`, {
+    method: "POST"
+  });
+
+  const data = await res.json();
+  if (data.message) {
+    alert(data.message);
+    loadCases(); // 重新載入列表
+  } else {
+    alert("撤銷失敗：" + (data.error || ""));
+  }
 }
 
 // 使用 data- 屬性開啟編輯 Modal

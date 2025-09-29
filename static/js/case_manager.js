@@ -4,6 +4,7 @@ const STATUS_MAP = {
     accepted: "已接取",
     in_progress: "進行中",
     delivered: "已送達",
+    cancelled: "已撤銷",
     done: "已完成"
 };
 
@@ -18,24 +19,23 @@ export async function fetchCases(url) {
 export function createCaseCard(caseData, type = "pending", container, openUpdateModal) {
     const div = document.createElement("div");
     div.className = "col-12";
-    div.dataset.caseId = caseData.id; // ✅ 保留
-    // 判斷是否完成
-    const isDone = caseData.status === "done";
+    div.dataset.caseId = caseData.id;
+
     div.innerHTML = `
         <div class="card p-3">
             <div>
-            <strong>${caseData.document_name || "無文件名稱"}</strong><br>
-            交付對象: ${caseData.delivery_target || "無"}<br>
-            客戶給予地點: ${caseData.given_location || "無"}<br>
-            交付時間: ${caseData.given_to_staff_time || "無"}<br>
-            狀態: <span class="status-text">${STATUS_MAP[caseData.status] || caseData.status}</span><br>
-            備註: ${caseData.note || "無"}   <!-- ✅ 新增 -->
+                <strong>${caseData.document_name || "無文件名稱"}</strong><br>
+                交付對象: ${caseData.delivery_target || "無"}<br>
+                客戶給予地點: ${caseData.given_location || "無"}<br>
+                交付時間: ${caseData.given_to_staff_time || "無"}<br>
+                狀態: <span class="status-text">${STATUS_MAP[caseData.status] || caseData.status}</span><br>
+                備註: ${caseData.note || "無"}
             </div>
-            <button class="btn ${type === "pending" ? "btn-success" : "btn-warning"} btn-sm mt-2">
-            ${type === "pending" ? "接取" : "更新進度"}
+            <button class="btn btn-warning btn-sm mt-2">
+                ${type === "pending" ? "接取" : "更新進度"}
             </button>
         </div>
-        `;
+    `;
 
     const btn = div.querySelector("button");
 
@@ -43,12 +43,17 @@ export function createCaseCard(caseData, type = "pending", container, openUpdate
         btn.className = "btn btn-success btn-sm mt-2";
         btn.addEventListener("click", () => takeCase(caseData.id, div, container, openUpdateModal));
     } else {
-        // 判斷案件是否完成
-        if (caseData.status === "done") {
+        // ✅ 處理完成或撤銷
+        if (caseData.status === "已完成") {
             btn.textContent = "已完成";
             btn.className = "btn btn-secondary btn-sm mt-2";
             btn.disabled = true;
+        } else if (caseData.status === "已撤銷") {
+            btn.textContent = "已撤銷";
+            btn.className = "btn btn-secondary btn-sm mt-2";
+            btn.disabled = true;
         } else {
+            btn.textContent = "更新進度";
             btn.className = "btn btn-warning btn-sm mt-2";
             btn.addEventListener("click", () => openUpdateModal(caseData.id, div));
         }
@@ -157,9 +162,9 @@ form.addEventListener("submit", async (e) => {
     const openUpdateModal = (caseId, divElement) => {
     const currentStatus = divElement.querySelector(".status-text").textContent;
 
-    if (currentStatus === "done") {
-        alert("此案件已完成，不可再修改進度");
-        return; // 不打開 Modal
+    if (currentStatus === "已完成" || currentStatus === "已撤銷") {
+        alert("此案件已完成或已撤銷，不可更新進度");
+        return;
     }
 
     document.getElementById("updateCaseId").value = caseId;

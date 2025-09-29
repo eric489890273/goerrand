@@ -11,7 +11,8 @@ STATUS_MAP = {
     "accepted": "已接取",
     "in_progress": "進行中",
     "delivered": "已送達",
-    "done": "已完成"
+    "done": "已完成",
+    "cancelled": "已撤銷"   # ✅ 新增
 }
 
 app = Flask(__name__)
@@ -267,6 +268,38 @@ def case_history(case_id):
     ]
 
     return jsonify({"updates": updates})
+
+# 撤銷案件（只有案件擁有者能撤銷，員工不可）
+@app.route("/cancel_case/<int:case_id>", methods=["POST"])
+@login_required
+def cancel_case(case_id):
+    case = Case.query.get(case_id)
+    if not case:
+        return jsonify({"error": "Case not found"}), 404
+
+    # 僅案件建立者可以撤銷
+    if case.user_id != current_user.id:
+        return jsonify({"error": "Access denied"}), 403
+
+    # 如果已完成則不可撤銷
+    if case.status == "done":
+        return jsonify({"error": "此案件已完成，無法撤銷"}), 400
+
+    # 修改狀態為撤銷
+    case.status = "cancelled"
+
+    # 加入歷程
+    case_update = CaseUpdate(
+        case_id=case.id,
+        status="cancelled",
+        note="使用者撤銷案件",
+        location=None,
+        update_time=datetime.utcnow()
+    )
+    db.session.add(case_update)
+    db.session.commit()
+
+    return jsonify({"message": "案件已撤銷"})
 
 ## 路徑
 # 根目錄

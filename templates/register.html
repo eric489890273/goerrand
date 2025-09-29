@@ -2,35 +2,95 @@
 {% block content %}
 <h2>註冊</h2>
 <form id="registerForm">
+  <!-- 使用者名稱 -->
   <div class="mb-3">
     <label for="username" class="form-label">使用者名稱</label>
     <input type="text" class="form-control" id="username" required>
+    <div id="usernameFeedback" class="form-text text-danger"></div>
   </div>
-  <div class="mb-3">
+
+  <!-- 密碼 -->
+  <div class="mb-3 position-relative">
     <label for="password" class="form-label">密碼</label>
     <input type="password" class="form-control" id="password" required>
+    <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 mt-2 me-2" id="togglePassword">顯示</button>
   </div>
+
+  <!-- 確認密碼 -->
+  <div class="mb-3 position-relative">
+    <label for="confirmPassword" class="form-label">確認密碼</label>
+    <input type="password" class="form-control" id="confirmPassword" required>
+    <button type="button" class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 mt-2 me-2" id="toggleConfirmPassword">顯示</button>
+    <div id="passwordFeedback" class="form-text text-danger"></div>
+  </div>
+
   <button type="submit" class="btn btn-success">註冊</button>
 </form>
 
 <script>
+// 密碼顯示/隱藏切換
+document.getElementById("togglePassword").addEventListener("click", () => {
+    const pwd = document.getElementById("password");
+    const btn = document.getElementById("togglePassword");
+    if (pwd.type === "password") { pwd.type = "text"; btn.textContent = "隱藏"; }
+    else { pwd.type = "password"; btn.textContent = "顯示"; }
+});
+
+document.getElementById("toggleConfirmPassword").addEventListener("click", () => {
+    const pwd = document.getElementById("confirmPassword");
+    const btn = document.getElementById("toggleConfirmPassword");
+    if (pwd.type === "password") { pwd.type = "text"; btn.textContent = "隱藏"; }
+    else { pwd.type = "password"; btn.textContent = "顯示"; }
+});
+
+// 即時檢查使用者名稱是否重複
+document.getElementById("username").addEventListener("blur", async () => {
+    const username = document.getElementById("username").value.trim();
+    if (!username) return;
+
+    const res = await fetch(`/check_username/${encodeURIComponent(username)}`);
+    const data = await res.json();
+    const feedback = document.getElementById("usernameFeedback");
+
+    if (data.exists) feedback.textContent = "使用者名稱已存在";
+    else feedback.textContent = "";
+});
+
+// 註冊表單提交
 document.getElementById("registerForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const res = await fetch("/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: document.getElementById("username").value,
-      password: document.getElementById("password").value
-    })
-  });
-  const data = await res.json();
-  if(res.ok) {
-    alert(data.message);
-    window.location.href = "/login_page";
-  } else {
-    alert(data.error);
-  }
+    e.preventDefault();
+
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+    const usernameFeedback = document.getElementById("usernameFeedback");
+    const passwordFeedback = document.getElementById("passwordFeedback");
+
+    // 驗證使用者名稱
+    if (usernameFeedback.textContent) return;
+
+    // 驗證密碼一致
+    if (password !== confirmPassword) {
+        passwordFeedback.textContent = "密碼與確認密碼不一致";
+        return;
+    } else {
+        passwordFeedback.textContent = "";
+    }
+
+    // 送出註冊
+    const res = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+        alert(data.message);
+        window.location.href = "/login_page";
+    } else {
+        alert(data.error);
+    }
 });
 </script>
 {% endblock %}

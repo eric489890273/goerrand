@@ -7,7 +7,7 @@
     <input type="text" class="form-control" id="document_name">
   </div>
   <div class="mb-3">
-    <label for="delivery_target" class="form-label">送達地點/交付對象（必填）</label>
+    <label for="delivery_target" class="form-label">送達地點與交付對象（必填）</label>
     <input type="text" class="form-control" id="delivery_target" required>
   </div>
   <div class="mb-3">
@@ -17,6 +17,10 @@
   <div class="mb-3">
     <label for="given_to_staff_time" class="form-label">給予文件時間（必填）</label>
     <input type="datetime-local" class="form-control" id="given_to_staff_time" required>
+  </div>
+  <div class="mb-3">
+  <label for="note" class="form-label">備註（可空）</label>
+  <textarea class="form-control" id="note"></textarea>
   </div>
   <button type="submit" class="btn btn-primary">提交案件</button>
 </form>
@@ -31,7 +35,8 @@ document.getElementById("createCaseForm").addEventListener("submit", async (e) =
       document_name: document.getElementById("document_name").value,
       delivery_target: document.getElementById("delivery_target").value,
       given_location: document.getElementById("given_location").value,
-      given_to_staff_time: document.getElementById("given_to_staff_time").value
+      given_to_staff_time: document.getElementById("given_to_staff_time").value,
+      note: document.getElementById("note").value   // ✅ 新增
     })
   });
   const data = await res.json();

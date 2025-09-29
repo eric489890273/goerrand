@@ -1,3 +1,12 @@
+// 對照表
+const STATUS_MAP = {
+    pending: "待處理",
+    accepted: "已接取",
+    in_progress: "進行中",
+    delivered: "已送達",
+    done: "已完成"
+};
+
 // case_manager.js
 export async function fetchCases(url) {
     const res = await fetch(url);
@@ -19,7 +28,8 @@ export function createCaseCard(caseData, type = "pending", container, openUpdate
             交付對象: ${caseData.delivery_target || "無"}<br>
             客戶給予地點: ${caseData.given_location || "無"}<br>
             交付時間: ${caseData.given_to_staff_time || "無"}<br>
-            狀態: <span class="status-text">${caseData.status}</span>
+            狀態: <span class="status-text">${STATUS_MAP[caseData.status] || caseData.status}</span><br>
+            備註: ${caseData.note || "無"}   <!-- ✅ 新增 -->
             </div>
             <button class="btn ${type === "pending" ? "btn-success" : "btn-warning"} btn-sm mt-2">
             ${type === "pending" ? "接取" : "更新進度"}
@@ -58,7 +68,8 @@ export async function takeCase(caseId, divElement, takenContainer, openUpdateMod
         });
         const data = await res.json();
         if (data.message) {
-            divElement.querySelector(".status-text").textContent = "accepted";
+            divElement.querySelector(".status-text").textContent = STATUS_MAP["accepted"];
+
 
             const btn = divElement.querySelector("button");
             const newBtn = btn.cloneNode(true);
@@ -112,7 +123,7 @@ form.addEventListener("submit", async (e) => {
         if (data.message && divElement) {
             // 更新狀態文字
             const statusSpan = divElement.querySelector(".status-text");
-            statusSpan.textContent = status;
+            statusSpan.textContent = STATUS_MAP[status] || status;
 
             // 更新按鈕
             const oldBtn = divElement.querySelector("button");
@@ -168,7 +179,7 @@ export function populateTable(tableBodyId, cases) {
     const tbody = document.getElementById(tableBodyId);
     tbody.innerHTML = "";
     cases.forEach(c => {
-        const updates = (c.updates || []).map(u => `${u.time}: ${u.status} (${u.note || ''}) at ${u.location || ''}`).join("<br>");
+        const updates = (c.updates || []).map(u =>`${u.time}: ${STATUS_MAP[u.status] || u.status} (${u.note || ''}) at ${u.location || ''}`)
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td>${c.id}</td>
@@ -176,7 +187,8 @@ export function populateTable(tableBodyId, cases) {
             <td>${c.delivery_target || ""}</td>
             <td>${c.given_location || ""}</td>
             <td>${c.given_to_staff_time || ""}</td>
-            <td>${c.status}</td>
+            <td>${STATUS_MAP[c.status] || c.status}</td>
+            <td>${c.note || ""}</td>   <!-- ✅ 新增 -->
             <td>${updates}</td>
         `;
         tbody.appendChild(tr);

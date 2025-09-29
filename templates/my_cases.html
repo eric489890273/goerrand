@@ -20,7 +20,8 @@ async function loadCases(){
             <strong>送達對象：</strong>${c.delivery_target}<br>
             <strong>給予地點：</strong>${c.given_location}<br>
             <strong>給予時間：</strong>${c.given_to_staff_time}<br>
-            <strong>狀態：</strong>${c.status}
+            <strong>狀態：</strong>${c.status}<br>
+            <strong>備註：</strong>${c.note || "無"}
           </p>
         </div>
       </div>

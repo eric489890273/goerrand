@@ -26,6 +26,7 @@ class Case(db.Model):
     given_location = db.Column(db.String(200), nullable=False)
     given_to_staff_time = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default="pending")
+    note = db.Column(db.Text, nullable=True)  # ✅ 新增備註欄位
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

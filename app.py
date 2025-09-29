@@ -3,6 +3,16 @@ from flask import Flask, request, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, User, Case, CaseUpdate
 from flask import render_template
+from flask import redirect, url_for
+
+# 對照表
+STATUS_MAP = {
+    "pending": "待處理",
+    "accepted": "已接取",
+    "in_progress": "進行中",
+    "delivered": "已送達",
+    "done": "已完成"
+}
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cases.db'
@@ -51,7 +61,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return jsonify({"message": "Logged out"})
+    return redirect(url_for("login_page"))  # 登出後導向登入頁
 
 # 建立案件（客戶）
 @app.route("/create_case", methods=["POST"])
@@ -64,13 +74,14 @@ def create_case():
         delivery_target=data["delivery_target"],
         given_location=data["given_location"],
         given_to_staff_time=datetime.fromisoformat(data["given_to_staff_time"]),
+        note=data.get("note"),   # ✅ 新增
         status="pending",
         user_id=current_user.id
     )
     db.session.add(case)
     db.session.commit()
 
-    return jsonify({"message": "Case created!", "case_id": case.id})
+    return jsonify({"message": "案件建立成功！", "case_id": case.id})
 
 
 # 查看自己的案件（客戶）
@@ -85,7 +96,8 @@ def get_cases():
             "delivery_target": c.delivery_target,
             "given_location": c.given_location,
             "given_to_staff_time": c.given_to_staff_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "status": c.status
+            "status": STATUS_MAP.get(c.status, c.status),
+            "note": c.note or ""   # ✅ 把 note 加回來
         }
         for c in cases
     ])
@@ -116,7 +128,8 @@ def all_cases():
             "delivery_target": c.delivery_target,
             "given_location": c.given_location,
             "given_to_staff_time": c.given_to_staff_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "status": c.status,
+            "status": STATUS_MAP.get(c.status, c.status),
+            "note": c.note or "",
             "user_id": c.user_id,
             "updates": updates
         })
@@ -138,7 +151,9 @@ def pending_cases():
             "delivery_target": c.delivery_target,
             "given_location": c.given_location,
             "given_to_staff_time": c.given_to_staff_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "user_id": c.user_id
+            "status": STATUS_MAP.get(c.status, c.status),
+            "user_id": c.user_id,
+            "note": c.note or ""
         }
         for c in cases
     ]
@@ -178,13 +193,50 @@ def update_taken_case(case_id):
 
     return jsonify({"message": "Case progress updated"})
 
+# 檢查使用者名稱是否存在
+@app.route("/check_username/<username>")
+def check_username(username):
+    exists = User.query.filter_by(username=username).first() is not None
+    return jsonify({"exists": exists})
 
+# 取得員工已接案件
+@app.route("/my_taken_cases")
+@login_required
+def my_taken_cases():
+    if current_user.role != "staff":
+        return jsonify({"error": "Access denied"}), 403
+
+    cases = Case.query.filter(Case.status != "pending").all()
+    result = []
+    for c in cases:
+        updates = [
+            {
+                "status": u.status,
+                "note": u.note,
+                "location": u.location,
+                "time": u.update_time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            for u in CaseUpdate.query.filter_by(case_id=c.id).order_by(CaseUpdate.update_time)
+        ]
+        result.append({
+            "id": c.id,
+            "document_name": c.document_name,
+            "delivery_target": c.delivery_target,
+            "given_location": c.given_location,
+            "given_to_staff_time": c.given_to_staff_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "status": STATUS_MAP.get(c.status, c.status),
+            "note": c.note or "",
+            "updates": updates
+        })
+    return jsonify(result)
 
 ## 路徑
 # 根目錄
 @app.route("/")
 def index():
-    return render_template("index.html")
+    if not current_user.is_authenticated:
+        return redirect(url_for("login_page"))  # 未登入導向登入頁
+    return render_template("index.html")       # 已登入導向首頁
 
 # 登入頁面
 @app.route("/login_page")
@@ -229,36 +281,6 @@ def take_case_page():
     if current_user.role != "staff":
         return "Access denied", 403
     return render_template("take_case_page.html")
-
-# 取得員工已接案件
-@app.route("/my_taken_cases")
-@login_required
-def my_taken_cases():
-    if current_user.role != "staff":
-        return jsonify({"error": "Access denied"}), 403
-
-    cases = Case.query.filter(Case.status != "pending").all()
-    result = []
-    for c in cases:
-        updates = [
-            {
-                "status": u.status,
-                "note": u.note,
-                "location": u.location,
-                "time": u.update_time.strftime("%Y-%m-%d %H:%M:%S")
-            }
-            for u in CaseUpdate.query.filter_by(case_id=c.id).order_by(CaseUpdate.update_time)
-        ]
-        result.append({
-            "id": c.id,
-            "document_name": c.document_name,
-            "delivery_target": c.delivery_target,
-            "given_location": c.given_location,
-            "given_to_staff_time": c.given_to_staff_time.strftime("%Y-%m-%d %H:%M:%S"),
-            "status": c.status,
-            "updates": updates
-        })
-    return jsonify(result)
 
 
 with app.app_context():

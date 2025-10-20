@@ -16,7 +16,7 @@ STATUS_MAP = {
 }
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] =  "postgresql://admin:u9uxOzlidvOhbVwTIQ3cklieIa4r1vbD@dpg-d3dc0a3e5dus73dmo4c0-a/cases_5ypf"##'sqlite:///cases.db'
+app.config['SQLALCHEMY_DATABASE_URI'] =  "postgresql://postgres:tyjjinin970531@db.bsqoiegktersudtborqv.supabase.co:5432/postgres"##'sqlite:///cases.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "secret_key"
 

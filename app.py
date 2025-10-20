@@ -16,7 +16,7 @@ STATUS_MAP = {
 }
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] =  "postgresql://postgres:tyjjinin970531@db.bsqoiegktersudtborqv.supabase.co:5432/postgres"##'sqlite:///cases.db'
+app.config['SQLALCHEMY_DATABASE_URI'] =  'postgresql://neondb_owner:npg_Sv7gIWUzF9wj@ep-restless-dew-adfxloxf-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'##'sqlite:///cases.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "secret_key"
 

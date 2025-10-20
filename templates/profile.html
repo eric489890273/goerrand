@@ -1,7 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>個人資訊</h2>
-<p><strong>使用者名稱:</strong> {{ current_user.username }}</p>
-<p><strong>角色:</strong> {{ current_user.role }}</p>
-<p><strong>提交的案件數:</strong> {{ current_user.cases|length }}</p>
+<div class="container">
+    <h2 class="mb-4">個人資訊</h2>
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm no-hover">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">👤 {{ current_user.username }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text"><strong>身分:</strong> {{ current_user.role }}</p>
+                    <p class="card-text"><strong>提交的案件數:</strong> {{ current_user.cases|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

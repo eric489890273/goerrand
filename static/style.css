@@ -16,6 +16,15 @@ body {
     box-shadow: 0 8px 15px rgba(0,0,0,0.25);
 }
 
+.card.no-hover {
+    transition: none !important;
+}
+
+.card.no-hover:hover {
+    transform: none !important;
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; /* 保持原本小陰影，不浮起 */
+}
+
 /* 卡片內文字置中 */
 .card-body {
     display: flex;
